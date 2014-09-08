@@ -10,7 +10,7 @@ var FILE_DECL = /(?:href|src)="(.*)[\?]rev=(.*)[\"]/gi;
 
 var revPlugin = function revPlugin() {
 
-  return map(function(file, cb) {
+  return map(function (file, cb) {
 
     var contents = file.contents.toString();
     var lines = contents.split('\n');
@@ -20,23 +20,29 @@ var revPlugin = function revPlugin() {
     var dependencyPath;
     var data, hash;
 
-    if(!file) {
-      throw new PluginError('gulp-rev', 'Missing fileName option for gulp-rev.');
+    if (!file) {
+      throw new PluginError('gulp-rev-append', 'Missing fileName option for gulp-rev-append.');
     }
 
-    for(i = 0; i < length; i++) {
+    for (i = 0; i < length; i++) {
       line = lines[i];
       groups = FILE_DECL.exec(line);
-      if(groups && groups.length > 1) {
-        dependencyPath = path.resolve(path.dirname(file.path), groups[1]);
+      if (groups && groups.length > 1) {
+
+        var normilizedPath = path.normalize(groups[1]);
+        dependencyPath = 0 === normilizedPath.indexOf(path.sep) ?
+          dependencyPath = path.join(file.base, normilizedPath) :
+          dependencyPath = path.resolve(path.dirname(file.path), normilizedPath);
+
         try {
           data = fs.readFileSync(dependencyPath);
           hash = crypto.createHash('md5');
           hash.update(data.toString(), 'utf8');
           line = line.replace(groups[2], hash.digest('hex'));
         }
-        catch(e) {
-          // fail silently.
+        catch (e) {
+          // add some random bits
+          line = line.replace(groups[2], Math.random().toString().slice(2));
         }
       }
       lines[i] = line;
